@@ -117,10 +117,6 @@ class TuringMakinesi:
                 if okunan_sembol in ['0', '1']:
                     yon = "R"
                 elif okunan_sembol == '*':
-                    print(f"\n>>> BİLGİ: '*' bulundu -> Operandlar ayrıştırıldı.")
-                    print(f"    Sol Taraf (1. Sayı) : {self.sayi1}")
-                    print(f"    Sağ Taraf (2. Sayı) : {self.sayi2}\n")
-                    print("-" * 80)
                     self.durum = "q_find_equals"
                     yon = "R"
                 else:
@@ -200,8 +196,6 @@ def binary_kontrol(metin):
 
 
 def main():
-    print("** Turing Makinesi ile Binary Çarpma **\n")
-
     while True:
         sayi1 = input("1. sayı: ").strip()
         sayi2 = input("2. sayı: ").strip()
