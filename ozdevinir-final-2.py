@@ -1,136 +1,75 @@
 BLANK = "_"
-
 START_STATE = "q0"
 ACCEPT_STATE = "q7"
 REJECT_STATE = "q8"
 
-EXPECTED = {
-    "q0": "digit",   # 1. karakter
-    "q1": "digit",   # 2. karakter
-    "q2": "upper",   # 3. karakter
-    "q3": "upper",   # 4. karakter
-    "q4": "digit",   # 5. karakter
-    "q5": "digit",   # 6. karakter
-    "q6": "digit",   # 7. karakter
-}
+def is_digit(ch):
+    return "0" <= ch <= "9"
 
-def symbol_class(ch: str) -> str:
-    if "0" <= ch <= "9":
-        return "digit"
-    if "A" <= ch <= "Z":
-        return "upper"
-    if ch == BLANK:
-        return "blank"
-    return "other"
+def is_upper(ch):
+    return "A" <= ch <= "Z"
 
-def tape_view(tape, head):
-    shown = []
-    for i, ch in enumerate(tape):
-        if i == head:
-            shown.append(f"[{ch}]")
-        else:
-            shown.append(f" {ch} ")
-    return "".join(shown)
-
-def next_state_from(state: str) -> str:
-    """q0->q1, q1->q2, ... q6->q7."""
-    if state.startswith("q") and state[1:].isdigit():
-        n = int(state[1:])
-        return f"q{n + 1}"
-    return REJECT_STATE
-
-def transition(state: str, symbol: str):
-    if state == REJECT_STATE:
-        return REJECT_STATE, symbol, "S", "Already rejected"
-
+def transition(state, symbol):
+    if state == "q0":
+        return ("q1", symbol, "R") if is_digit(symbol) else (REJECT_STATE, symbol, "S")
+    if state == "q1":
+        return ("q2", symbol, "R") if is_digit(symbol) else (REJECT_STATE, symbol, "S")
+    if state == "q2":
+        return ("q3", symbol, "R") if is_upper(symbol) else (REJECT_STATE, symbol, "S")
+    if state == "q3":
+        return ("q4", symbol, "R") if is_upper(symbol) else (REJECT_STATE, symbol, "S")
+    if state == "q4":
+        return ("q5", symbol, "R") if is_digit(symbol) else (REJECT_STATE, symbol, "S")
+    if state == "q5":
+        return ("q6", symbol, "R") if is_digit(symbol) else (REJECT_STATE, symbol, "S")
+    if state == "q6":
+        return (ACCEPT_STATE, symbol, "R") if is_digit(symbol) else (REJECT_STATE, symbol, "S")
+    
     if state == ACCEPT_STATE:
-        if symbol == BLANK:
-            return ACCEPT_STATE, symbol, "S", "End of tape reached"
-        return REJECT_STATE, symbol, "S", "Extra character after 7 symbols"
+        return (ACCEPT_STATE if symbol == BLANK else REJECT_STATE, symbol, "S")
+    
+    return (REJECT_STATE, symbol, "S")
 
-    expected = EXPECTED.get(state)
-
-    actual = symbol_class(symbol)
-
-    if expected is not None and actual == expected:
-        return next_state_from(state), symbol, "R", "Symbol matched"
-
-    return REJECT_STATE, symbol, "S", "Symbol mismatch"
-
-def simulate_turing_machine(input_string: str, verbose: bool = True) -> bool:
-    tape = list(input_string) + [BLANK] 
+def simulate_turing_machine(input_string, verbose=True):
+    tape = list(input_string) + [BLANK]
     head = 0
     state = START_STATE
     step = 1
-
-    if verbose:
-        print("\n--- Turing Makinesi Simülasyonu Başladı ---")
-        print(f"Girdi: {input_string}")
-        print(f"Başlangıç bandı: {''.join(tape)}\n")
+    
+    print(f"Girdi: {input_string}")
+    print(f"Başlangıç bandı: {''.join(tape)}")
+    print("-" * 50)
 
     while True:
-        current_symbol = tape[head] if head < len(tape) else BLANK
-
-        if state == ACCEPT_STATE:
-            if verbose:
-                print(
-                    f"Adım {step:02d} | Durum: {state} | Okunan: {current_symbol} | "
-                    f"Kafa: S | Bant: {tape_view(tape, head)}"
-                )
-            if current_symbol == BLANK:
-                if verbose:
-                    print("\nSonuç: KABUL")
-                return True
-            else:
-                if verbose:
-                    print("\nSonuç: RED")
-                return False
-
-        if state == REJECT_STATE:
-            if verbose:
-                print(f"Adım {step:02d} | Durum: {state} | Sonuç: RED")
+        current_symbol = tape[head]
+        
+        if state == ACCEPT_STATE and current_symbol == BLANK:
+            formatted_tape = " ".join([f"[{t}]" if i == head else t for i, t in enumerate(tape)])
+            print(f"Adım {step:02d} | Durum: {state} | Okunan: {current_symbol} | Kafa: S | Bant: {formatted_tape}")
+            print("Sonuç: KABUL")
+            return True
+        
+        if state == REJECT_STATE or (state == ACCEPT_STATE and current_symbol != BLANK):
+            print("Sonuç: RED")
             return False
 
-        new_state, written_symbol, move, reason = transition(state, current_symbol)
-
-        if head < len(tape):
-            tape[head] = written_symbol
-        else:
-            tape.append(written_symbol)
-
+        new_state, written, move = transition(state, current_symbol)
+        
+        formatted_tape = " ".join([f"[{t}]" if i == head else t for i, t in enumerate(tape)])
+        
         if verbose:
-            print(
-                f"Adım {step:02d} | Durum: {state} | Okunan: {current_symbol} | "
-                f"Yazılan: {written_symbol} | Kafa hareketi: {move} | "
-                f"Sonraki durum: {new_state} | Bant: {tape_view(tape, head)}"
-            )
-
+            print(f"Adım {step:02d} | Durum: {state} | Okunan: {current_symbol} | Yazılan: {written} | "
+                  f"Kafa hareketi: {move} | Sonraki durum: {new_state} | Bant: {formatted_tape}")
+        
         state = new_state
-
-        if state == REJECT_STATE:
-            if verbose:
-                print("\nSonuç: RED")
-            return False
-
-        if move == "R":
+        if move == "R" and head < len(tape) - 1:
             head += 1
-            if head >= len(tape):
-                tape.append(BLANK)
-        elif move == "L":
-            head = max(0, head - 1)
-
+        
         step += 1
-
-def print_transition_table():
-    print("\n--- Geçiş Tablosu ---")
-    print("Durum | Beklenen | Doğruysa -> | Yanlışsa ->")
-    print("---------------------------------------------")
-    for state in ["q0", "q1", "q2", "q3", "q4", "q5", "q6"]:
-        expected = EXPECTED[state]
-        print(f"{state:5} | {expected:8} | {next_state_from(state):10} | q8")
-    print(f"{ACCEPT_STATE:5} | blank     | kabul      | q8")
-    print(f"{REJECT_STATE:5} | -         | -          | -")
+        if step > 20: 
+            print("Sonuç: RED")
+            return False
 
 if __name__ == "__main__":
     plate = input("Plaka giriniz: ")
-    simulate_turing_machine(plate, verbose=True)
+    simulate_turing_machine(plate)
