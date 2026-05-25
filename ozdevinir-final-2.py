@@ -64,11 +64,6 @@ def simulate_turing_machine(input_string, verbose=True):
         state = new_state
         if move == "R" and head < len(tape) - 1:
             head += 1
-        
-        step += 1
-        if step > 20: 
-            print("Sonuç: RED")
-            return False
 
 if __name__ == "__main__":
     plate = input("Plaka giriniz: ")
